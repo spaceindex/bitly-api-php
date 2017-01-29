@@ -1,5 +1,5 @@
 {
-    "name": "spaceIndex/bitly",
+    "name": "spaceindex/bitly",
     "description": "PHP client for the Bitly API",
     "keywords": ["bitly", "api", "composer"],
     "type": "library",
