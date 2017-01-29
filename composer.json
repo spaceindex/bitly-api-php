@@ -1,8 +1,9 @@
 {
-    "name": "SpaceIndex/Bitly",
+    "name": "spaceIndex/bitly",
     "description": "PHP client for the Bitly API",
     "keywords": ["bitly", "api", "composer"],
     "type": "library",
+    "minimum-stability": "dev",
     "require": {
         "php": ">=7.0.0"
     },
