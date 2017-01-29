@@ -1,4 +1,8 @@
 ## Bitly API
 
-Docs will come, in the meantime, check out the [full API
+install
+
+`composer require spaceindex/bitly-api-php`
+
+Bitly [full API
 documentation](http://dev.bitly.com).

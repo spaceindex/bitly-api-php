@@ -2,27 +2,35 @@
 /**
  * Bitly API Client.
  *
+ * Fork by:
+ * @link       https://github.com/jsocol/bitly-api-php
+
  * LICENSE: Apache Software License v2.0, see LICENSE
  *
  * @package    Bitly
  * @copyright  Copyright (c) 2013 Bitly Inc.
  * @license    http://www.apache.org/licenses/LICENSE-2.0
- * @version    0.1.0
- * @link       https://github.com/bitly/bitly-api-php
+ * @version    0.2.0
+ * @link       https://github.com/spaceindex/bitly-api-php
  */
+namespace Bitly;
+
+use \Exception;
 
 /**
  * Base class for Bitly client errors.
  */
 class BitlyError extends Exception
-{}
+{
+}
 
 
 /**
  * Raised when communicating with the API results in an error.
  */
 class BitlyAPIError extends BitlyError
-{}
+{
+}
 
 /**
  * Build a query string from an array of param => values. Handle
@@ -46,7 +54,8 @@ class BitlyAPIError extends BitlyError
  *
  * @return string
  */
-function build_query(Array $params) {
+function build_query(Array $params)
+{
     $ret = array();
     $fmt = '%s=%s';
     $separator = '&';
@@ -68,6 +77,9 @@ function build_query(Array $params) {
  */
 class Bitly
 {
+    /** @var array */
+    public static $bitlyLinks = ['bit.ly', 'amzn.to', 'ebay.to'];
+
     /**
      * The application's OAuth2 client ID.
      *
@@ -137,8 +149,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/authentication.html
      */
-    public function __construct($clientId=null, $clientSecret=null,
-                                $accessToken=null)
+    public function __construct($clientId = null, $clientSecret = null,
+                                $accessToken = null)
     {
         $this->clientId = $clientId;
         $this->clientSecret = $clientSecret;
@@ -164,8 +176,8 @@ class Bitly
     public function getAccessToken($code, $redirectUri)
     {
         $params = array('code' => $code, 'redirect_uri' => $redirectUri,
-                        'client_id' => $this->clientId,
-                        'client_secret' => $this->clientSecret);
+            'client_id' => $this->clientId,
+            'client_secret' => $this->clientSecret);
         $result = $this->call('oauth/access_token', $params, true, false);
         $data = array();
         parse_str($result, $data);
@@ -183,12 +195,11 @@ class Bitly
      *  (Optional) A full bitly short URL, e.g. "http://bit.ly/1234"
      * @param string $hash
      *  (Optional) The hash component of a bitly short URL, e.g. "1234"
-     *
      * @return array
-     *
+     * @throws BitlyError
      * @see http://dev.bitly.com/links.html#v3_expand
      */
-    public function expand($shortUrl=null, $hash=null)
+    public function expand($shortUrl = null, $hash = null)
     {
         if (!$shortUrl && !$hash) {
             throw new BitlyError('shortUrl or hash must be specified');
@@ -197,8 +208,7 @@ class Bitly
         $params = array();
         if ($shortUrl) {
             $params['shortUrl'] = $shortUrl;
-        }
-        elseif ($hash) {
+        } elseif ($hash) {
             $params['hash'] = $hash;
         }
         $results = $this->call('v3/expand', $params);
@@ -217,12 +227,11 @@ class Bitly
      *  (Optional) The hash component of a bitly short URL, e.g. "1234"
      * @param $expandUser
      *  (Optional) Include extra information about the user.
-     *
      * @return array
-     *
+     * @throws BitlyError
      * @see http://dev.bitly.com/links.html#v3_info
      */
-    public function info($shortUrl=null, $hash=null, $expandUser=null)
+    public function info($shortUrl = null, $hash = null, $expandUser = null)
     {
         if (!$shortUrl && !$hash) {
             throw new BitlyError('shortUrl or hash must be specified');
@@ -234,8 +243,7 @@ class Bitly
 
         if ($shortUrl) {
             $params['shortUrl'] = $shortUrl;
-        }
-        elseif ($hash) {
+        } elseif ($hash) {
             $params['hash'] = $hash;
         }
         $results = $this->call('v3/info', $params);
@@ -265,23 +273,19 @@ class Bitly
      * 'domain' is a preferred domain, but if the user has a custom short
      * domain, the custom domain will always be used.
      *
-     * @param string $longUrl
-     *  A long URL to shorten.
+     * @param $url
      * @param string $domain
      *  (Optional) A preferred domain (either 'bit.ly', 'j.mp', or 'bitly.com').
-     *
-     * @returns array
-     *  An associative array containing:
-     *   - 'new_hash' (bool) Whether this URL has been shortened before.
-     *   - 'url' (string) The actual short URL.
-     *   - 'hash' (string) A Bitly identifier which is unique to this account.
-     *   - 'global_hash' (string) A Bitly identifier which can be tracked
-     *     across accounts.
-     *   - 'long_url' (string) An normalized echo back of the original long URL.
-     *
+     * @return array An associative array containing:
+     * An associative array containing:
+     * - 'new_hash' (bool) Whether this URL has been shortened before.
+     * - 'url' (string) The actual short URL.
+     * - 'hash' (string) A Bitly identifier which is unique to this account.
+     * - 'global_hash' (string) A Bitly identifier which can be tracked
+     * across accounts.
      * @see http://dev.bitly.com/links.html#v3_shorten
      */
-    public function shorten($url, $domain=null)
+    public function shorten($url, $domain = null)
     {
         $params = array('longUrl' => $url);
         if ($domain !== null) {
@@ -327,7 +331,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/links.html#v3_user_link_lookup
      */
-    public function userLinkLookup($url) {
+    public function userLinkLookup($url)
+    {
         $params = array('url' => $url);
         $results = $this->call('v3/user/link_lookup', $params);
         return $results['link_lookup'][0];
@@ -392,20 +397,20 @@ class Bitly
      *  'us-il-chicago').
      * @param string $domain
      *  (Optional) Restrict results to this domain.
+     * @param array $fields
+     * @return array An array of results, each result is an associative array and its
+     * An array of results, each result is an associative array and its
+     * contents will depend on 'fields'.
      * @fields string[]
      *  (Optional) Which fields to return in the response.
      *
-     * @return array
-     *  An array of results, each result is an associative array and its
-     *  contents will depend on 'fields'.
-     *
      * @see http://dev.bitly.com/data_apis.html#v3_search
      */
-    public function search($query, $limit=10, $offset=0, $lang=null,
-                           $cities=null, $domain=null, Array $fields=null)
+    public function search($query, $limit = 10, $offset = 0, $lang = null,
+                           $cities = null, $domain = null, Array $fields = null)
     {
         $params = array('query' => $query, 'limit' => $limit,
-                        'offset' => $offset);
+            'offset' => $offset);
         if ($lang !== null) {
             $params['lang'] = $lang;
         }
@@ -431,7 +436,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/data_apis.html#v3_realtime_bursting_phrases
      */
-    public function realtimeBurstingPhrases() {
+    public function realtimeBurstingPhrases()
+    {
         return $this->call('v3/realtime/bursting_phrases');
     }
 
@@ -444,7 +450,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/data_apis.html#v3_realtime_hot_phrases
      */
-    public function realtimeHotPhrases() {
+    public function realtimeHotPhrases()
+    {
         return $this->call('v3/realtime/hot_phrases');
     }
 
@@ -457,7 +464,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/data_apis.html#v3_realtime_clickrate
      */
-    public function realtimeClickrate($phrase) {
+    public function realtimeClickrate($phrase)
+    {
         $params = array('phrase' => $phrase);
         return $this->call('v3/realtime/clickrate', $params);
     }
@@ -471,7 +479,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/data_apis.html#v3_link_info
      */
-    public function linkInfo($link) {
+    public function linkInfo($link)
+    {
         $params = array('link' => $link);
         return $this->call('v3/link/info', $params);
     }
@@ -486,7 +495,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/data_apis.html#v3_link_content
      */
-    public function linkContent($link) {
+    public function linkContent($link)
+    {
         $params = array('link' => $link);
         return $this->call('v3/link/content', $params);
     }
@@ -501,7 +511,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/data_apis.html#v3_link_category
      */
-    public function linkCategory($link) {
+    public function linkCategory($link)
+    {
         $params = array('link' => $link);
         $results = $this->call('v3/link/category', $params);
         return $results['categories'];
@@ -521,7 +532,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/data_apis.html#v3_link_social
      */
-    public function linkSocial($link) {
+    public function linkSocial($link)
+    {
         $params = array('link' => $link);
         $results = $this->call('v3/link/social', $params);
         return $results['social_scores'];
@@ -541,7 +553,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/data_apis.html#v3_link_location
      */
-    public function linkLocation($link) {
+    public function linkLocation($link)
+    {
         $params = array('link' => $link);
         $results = $this->call('v3/link/location', $params);
         return $results['locations'];
@@ -556,7 +569,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/data_apis.html#v3_link_language
      */
-    public function linkLanguage($link) {
+    public function linkLanguage($link)
+    {
         $params = array('link' => $link);
         $results = $this->call('v3/link/language', $params);
         return $results['languages'];
@@ -577,13 +591,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_link_clicks
      */
-    public function linkClicks($link, $unit='day', $units=null,
-                               $timezone='America/New_York', $rollup=null,
-                               $limit=100, $unitReferenceTs='now')
+    public function linkClicks($link, $unit = 'day', $units = null,
+                               $timezone = 'America/New_York', $rollup = null,
+                               $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('link' => $link, 'unit' => $unit,
-                        'timezone' => $timezone, 'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'timezone' => $timezone, 'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -608,13 +622,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_link_countries
      */
-    public function linkCountries($link, $unit='day', $units=null,
-                                  $timezone='America/New_York', $limit=100,
-                                  $unitReferenceTs='now')
+    public function linkCountries($link, $unit = 'day', $units = null,
+                                  $timezone = 'America/New_York', $limit = 100,
+                                  $unitReferenceTs = 'now')
     {
         $params = array('link' => $link, 'unit' => $unit,
-                        'timezone' => $timezone, 'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'timezone' => $timezone, 'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -635,8 +649,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_link_encoders
      */
-    public function linkEncoders($link, $myNetwork=null, $limit=10,
-                                 $expandUser=null)
+    public function linkEncoders($link, $myNetwork = null, $limit = 10,
+                                 $expandUser = null)
     {
         $params = array('link' => $link, 'limit' => $limit);
         if ($myNetwork !== null) {
@@ -677,13 +691,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_link_referrers
      */
-    public function linkReferrers($link, $unit='day', $units=null,
-                                  $timezone='America/New_York', $limit=100,
-                                  $unitReferenceTs='now')
+    public function linkReferrers($link, $unit = 'day', $units = null,
+                                  $timezone = 'America/New_York', $limit = 100,
+                                  $unitReferenceTs = 'now')
     {
         $params = array('link' => $link, 'unit' => $unit, 'limit' => $limit,
-                        'timezone' => $timezone,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'timezone' => $timezone,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -705,13 +719,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_link_referrers_by_domain
      */
-    public function linkReferrersByDomain($link, $unit='day', $units=null,
-                                          $timezone='America/New_York',
-                                          $limit=100, $unitReferenceTs='now')
+    public function linkReferrersByDomain($link, $unit = 'day', $units = null,
+                                          $timezone = 'America/New_York',
+                                          $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('link' => $link, 'unit' => $unit, 'limit' => $limit,
-                        'timezone' => $timezone,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'timezone' => $timezone,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -733,13 +747,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_link_referring_domains
      */
-    public function linkReferringDomains($link, $unit='day', $units=null,
-                                         $timezone='America/New_York',
-                                         $limit=100, $unitReferenceTs='now')
+    public function linkReferringDomains($link, $unit = 'day', $units = null,
+                                         $timezone = 'America/New_York',
+                                         $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('link' => $link, 'unit' => $unit, 'limit' => $limit,
-                        'timezone' => $timezone,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'timezone' => $timezone,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -761,13 +775,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_link_shares
      */
-    public function linkShares($link, $unit='day', $units=null,
-                               $timezone='America/New_York', $rollup=null,
-                               $limit=100, $unitReferenceTs='now')
+    public function linkShares($link, $unit = 'day', $units = null,
+                               $timezone = 'America/New_York', $rollup = null,
+                               $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('link' => $link, 'unit' => $unit, 'limit' => $limit,
-                        'timezone' => $timezone,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'timezone' => $timezone,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -793,7 +807,7 @@ class Bitly
      *
      * @see http://dev.bitly.com/user_info.html#v3_user_info
      */
-    public function userInfo($login=null, $fullName=null)
+    public function userInfo($login = null, $fullName = null)
     {
         $params = array();
         if ($login !== null) {
@@ -824,10 +838,10 @@ class Bitly
      *
      * @see http://dev.bitly.com/user_info.html#v3_user_link_history
      */
-    public function userLinkHistory($link=null, $limit=50, $offset=null,
-                                    $createdBefore=null, $createdAfter=null,
-                                    $modifiedAfter=null, $expandClientId=null,
-                                    $archived=null, $private=null, $user=null)
+    public function userLinkHistory($link = null, $limit = 50, $offset = null,
+                                    $createdBefore = null, $createdAfter = null,
+                                    $modifiedAfter = null, $expandClientId = null,
+                                    $archived = null, $private = null, $user = null)
     {
         $params = array();
         if ($link !== null) {
@@ -873,11 +887,11 @@ class Bitly
      *
      * @see http://dev.bitly.com/user_info.html#v3_user_network_history
      */
-    public function userNetworkHistory($offset=null, $expandClientId=false,
-                                       $limit=20, $expandUser=null)
+    public function userNetworkHistory($offset = null, $expandClientId = false,
+                                       $limit = 20, $expandUser = null)
     {
         $params = array('expand_client_id' => $expandClientId,
-                        'limit' => $limit);
+            'limit' => $limit);
         if ($offset !== null) {
             $params['offset'] = $offset;
         }
@@ -915,13 +929,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_user_clicks
      */
-    public function userClicks($unit='day', $units=null,
-                               $timezone='America/New_York', $rollup=null,
-                               $limit=100, $unitReferenceTs='now')
+    public function userClicks($unit = 'day', $units = null,
+                               $timezone = 'America/New_York', $rollup = null,
+                               $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('unit' => $unit, 'timezone' => $timezone,
-                        'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -946,13 +960,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_user_countries
      */
-    public function userCountries($unit='day', $units=null,
-                                  $timezone='America/New_York', $rollup=null,
-                                  $limit=100, $unitReferenceTs='now')
+    public function userCountries($unit = 'day', $units = null,
+                                  $timezone = 'America/New_York', $rollup = null,
+                                  $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('unit' => $unit, 'timezone' => $timezone,
-                        'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -975,13 +989,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_user_popular_links
      */
-    public function userPopularLinks($unit='day', $units=null,
-                                  $timezone='America/New_York', $limit=100,
-                                  $unitReferenceTs='now')
+    public function userPopularLinks($unit = 'day', $units = null,
+                                     $timezone = 'America/New_York', $limit = 100,
+                                     $unitReferenceTs = 'now')
     {
         $params = array('unit' => $unit, 'timezone' => $timezone,
-                        'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -1003,13 +1017,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_user_referrers
      */
-    public function userReferrers($unit='day', $units=null,
-                                  $timezone='America/New_York', $rollup=null,
-                                  $limit=100, $unitReferenceTs='now')
+    public function userReferrers($unit = 'day', $units = null,
+                                  $timezone = 'America/New_York', $rollup = null,
+                                  $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('unit' => $unit, 'timezone' => $timezone,
-                        'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -1034,14 +1048,14 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_user_referring_domains
      */
-    public function userReferringDomains($unit='day', $units=null,
-                                         $timezone='America/New_York',
-                                         $rollup=null, $limit=100,
-                                         $unitReferenceTs='now')
+    public function userReferringDomains($unit = 'day', $units = null,
+                                         $timezone = 'America/New_York',
+                                         $rollup = null, $limit = 100,
+                                         $unitReferenceTs = 'now')
     {
         $params = array('unit' => $unit, 'timezone' => $timezone,
-                        'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -1066,13 +1080,13 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_user_share_counts
      */
-    public function userShareCounts($unit='day', $units=null,
-                                    $timezone='America/New_York', $rollup=null,
-                                    $limit=100, $unitReferenceTs='now')
+    public function userShareCounts($unit = 'day', $units = null,
+                                    $timezone = 'America/New_York', $rollup = null,
+                                    $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('unit' => $unit, 'timezone' => $timezone,
-                        'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -1098,12 +1112,12 @@ class Bitly
      * @see http://dev.bitly.com/link_metrics.html#v3_user_share_counts_by_share_type
      */
     public function userShareCountsByShareType(
-        $unit='day', $units=null, $timezone='America/New_York', $rollup=null,
-        $limit=100, $unitReferenceTs='now')
+        $unit = 'day', $units = null, $timezone = 'America/New_York', $rollup = null,
+        $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('unit' => $unit, 'timezone' => $timezone,
-                        'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -1128,14 +1142,14 @@ class Bitly
      *
      * @see http://dev.bitly.com/link_metrics.html#v3_user_shorten_counts
      */
-    public function userShortenCounts($unit='day', $units=null,
-                                      $timezone='America/New_York',
-                                      $rollup=null, $limit=100,
-                                      $unitReferenceTs='now')
+    public function userShortenCounts($unit = 'day', $units = null,
+                                      $timezone = 'America/New_York',
+                                      $rollup = null, $limit = 100,
+                                      $unitReferenceTs = 'now')
     {
         $params = array('unit' => $unit, 'timezone' => $timezone,
-                        'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -1173,7 +1187,7 @@ class Bitly
      *
      * @see http://dev.bitly.com/bundles.html#v3_bundle_bundles_by_user
      */
-    public function bundleBundlesByUser($user, $expandUser=null)
+    public function bundleBundlesByUser($user, $expandUser = null)
     {
         $params = array('user' => $user);
         if ($expandUser !== null) {
@@ -1212,7 +1226,7 @@ class Bitly
     public function bundleCollaboratorAdd($bundleLink, $collaborator)
     {
         $params = array('bundle_link' => $bundleLink,
-                        'collaborator' => $collaborator);
+            'collaborator' => $collaborator);
         $result = $this->call('v3/bundle/collaborator_add', $params);
         return $result['bundle'];
     }
@@ -1230,7 +1244,7 @@ class Bitly
     public function bundleCollaboratorRemove($bundleLink, $collaborator)
     {
         $params = array('bundle_link' => $bundleLink,
-                        'collaborator' => $collaborator);
+            'collaborator' => $collaborator);
         $result = $this->call('v3/bundle/collaborator_remove', $params);
         return $result['bundle'];
     }
@@ -1239,7 +1253,6 @@ class Bitly
      * Returns information about a bundle and its contents.
      *
      * @param string $bundleLink URL of the bundle.
-     * @param bool $expandUser (Optional)
      *
      * @return array
      *
@@ -1263,7 +1276,7 @@ class Bitly
      *
      * @see http://dev.bitly.com/bundles.html#v3_bundle_create
      */
-    public function bundleCreate($private=null, $title=null, $description=null)
+    public function bundleCreate($private = null, $title = null, $description = null)
     {
         $params = array();
         if ($private !== null) {
@@ -1297,8 +1310,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/bundles.html#v3_bundle_edit
      */
-    public function bundleEdit($bundleLink, $title=null, $description=null,
-                               $private=null, $preview=null, $ogImage=null)
+    public function bundleEdit($bundleLink, $title = null, $description = null,
+                               $private = null, $preview = null, $ogImage = null)
     {
         $params = array('bundle_link' => $bundleLink);
         $keys = array();
@@ -1340,7 +1353,7 @@ class Bitly
      *
      * @see http://dev.bitly.com/bundles.html#v3_bundle_link_add
      */
-    public function bundleLinkAdd($bundleLink, $link, $title=null)
+    public function bundleLinkAdd($bundleLink, $link, $title = null)
     {
         $params = array('bundle_link' => $bundleLink, 'link' => $link);
         if ($title !== null) {
@@ -1364,7 +1377,7 @@ class Bitly
     public function bundleLinkCommentAdd($bundleLink, $link, $comment)
     {
         $params = array('bundle_link' => $bundleLink, 'link' => $link,
-                        'comment' => $comment);
+            'comment' => $comment);
         $result = $this->call('v3/bundle/link_comment_add', $params);
         return $result['bundle'];
     }
@@ -1385,7 +1398,7 @@ class Bitly
                                           $comment)
     {
         $params = array('bundle_link' => $bundleLink, 'link' => $link,
-                        'comment_id' => $commentId, 'comment' => $comment);
+            'comment_id' => $commentId, 'comment' => $comment);
         $result = $this->call('v3/bundle/link_comment_edit', $params);
         return $result['bundle'];
     }
@@ -1406,7 +1419,7 @@ class Bitly
     public function bundleLinkCommentRemove($bundleLink, $link, $commentId)
     {
         $params = array('bundle_link' => $bundleLink, 'link' => $link,
-                        'comment_id' => $commentId);
+            'comment_id' => $commentId);
         $result = $this->call('v3/bundle/link_comment_remove', $params);
         return $result['bundle'];
     }
@@ -1425,8 +1438,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/bundles.html#v3_bundle_link_edit
      */
-    public function bundleLinkEdit($bundleLink, $link, $title=null,
-                                   $preview=null)
+    public function bundleLinkEdit($bundleLink, $link, $title = null,
+                                   $preview = null)
     {
         $params = array('bundle_link' => $bundleLink, 'link' => $link);
         $keys = array();
@@ -1476,13 +1489,10 @@ class Bitly
     public function bundleLinkReorder($bundleLink, $link, $displayOrder)
     {
         $params = array('bundle_link' => $bundleLink, 'link' => $link,
-                        'display_order' => $displayOrder);
+            'display_order' => $displayOrder);
         $result = $this->call('v3/bundle/link_reorder', $params);
         return $result['bundle'];
     }
-
-    // TODO: How?
-    //public function bundleReorder($bundleLink, Array $links) {}
 
     /**
      * Remove a pending/invited collaborator from a bundle.
@@ -1498,9 +1508,9 @@ class Bitly
                                                     $collaborator)
     {
         $params = array('bundle_link' => $bundleLink,
-                        'collaborator' => $collaborator);
+            'collaborator' => $collaborator);
         $result = $this->call('v3/bundle/pending_collaborator_remove',
-                              $params);
+            $params);
         return $result['bundle'];
     }
 
@@ -1513,7 +1523,8 @@ class Bitly
      *
      * @see http://dev.bitly.com/bundles.html#v3_bundle_view_count
      */
-    public function bundleViewCount($bundleLink) {
+    public function bundleViewCount($bundleLink)
+    {
         $params = array('bundle_link' => $bundleLink);
         $result = $this->call('v3/bundle/view_count', $params);
         return $result['view_count'];
@@ -1528,7 +1539,7 @@ class Bitly
      *
      * @see http://dev.bitly.com/bundles.html#v3_user_bundle_history
      */
-    public function userBundleHistory($expandUser=null)
+    public function userBundleHistory($expandUser = null)
     {
         $params = array();
         if ($expandUser !== null) {
@@ -1570,14 +1581,14 @@ class Bitly
      *
      * @see http://dev.bitly.com/domains.html#v3_user_tracking_domain_clicks
      */
-    public function userTrackingDomainClicks($domain, $unit='day', $units=null,
-                                             $timezone='America/New_York',
-                                             $rollup=null, $limit=100,
-                                             $unitReferenceTs='now')
+    public function userTrackingDomainClicks($domain, $unit = 'day', $units = null,
+                                             $timezone = 'America/New_York',
+                                             $rollup = null, $limit = 100,
+                                             $unitReferenceTs = 'now')
     {
         $params = array('domain' => $domain, 'unit' => $unit,
-                        'timezone' => $timezone, 'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'timezone' => $timezone, 'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -1605,12 +1616,12 @@ class Bitly
      * @see http://dev.bitly.com/domains.html#v3_user_tracking_domain_shorten_counts
      */
     public function userTrackingDomainShortenCounts(
-        $domain, $unit='day', $units=null, $timezone='America/New_York',
-        $rollup=null, $limit=100, $unitReferenceTs='now')
+        $domain, $unit = 'day', $units = null, $timezone = 'America/New_York',
+        $rollup = null, $limit = 100, $unitReferenceTs = 'now')
     {
         $params = array('domain' => $domain, 'unit' => $unit,
-                        'timezone' => $timezone, 'limit' => $limit,
-                        'unit_reference_ts' => $unitReferenceTs);
+            'timezone' => $timezone, 'limit' => $limit,
+            'unit_reference_ts' => $unitReferenceTs);
         if ($units !== null) {
             $params['units'] = $units;
         }
@@ -1618,7 +1629,7 @@ class Bitly
             $params['rollup'] = $rollup;
         }
         $result = $this->call('v3/user/tracking_domain_shorten_counts',
-                              $params);
+            $params);
         return $result['tracking_domain_shorten_counts'];
     }
 
@@ -1636,10 +1647,10 @@ class Bitly
      * @param array $params (Optional) Query parameters.
      * @param bool $post Do an HTTP POST instead of GET.
      * @param bool $json Attempt to decode response as JSON.
-     *
      * @return mixed
+     * @throws BitlyAPIError
      */
-    protected function call($endpoint, Array $params=null, $post=false, $json=true)
+    protected function call($endpoint, Array $params = null, $post = false, $json = true)
     {
         if ($params === null) {
             $params = array();
@@ -1647,13 +1658,13 @@ class Bitly
         $url = $this->apiUrl . $endpoint;
         $params['format'] = 'json';
         if ($this->accessToken !== null &&
-            !array_key_exists('access_token', $params))
-        {
+            !array_key_exists('access_token', $params)
+        ) {
             $params['access_token'] = $this->accessToken;
         }
 
         // Convert booleans to 'true'/'false'.
-        foreach($params as $k => &$v) {
+        foreach ($params as $k => &$v) {
             if (is_bool($v)) {
                 $v = $v ? 'true' : 'false';
             }
@@ -1668,7 +1679,7 @@ class Bitly
         if ($this->isIPv6Disabled) {
             curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         }
-        
+
         if ($post) {
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
@@ -1687,7 +1698,7 @@ class Bitly
             $result = json_decode($result, true);
             if ($result['status_code'] !== 200) {
                 throw new BitlyAPIError($result['status_txt'],
-                                        (int)$result['status_code']);
+                    (int)$result['status_code']);
             }
             return $result['data'];
         }

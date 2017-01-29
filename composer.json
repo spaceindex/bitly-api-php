@@ -1,19 +1,22 @@
 {
-    "name": "bitly/bitly-api-php",
-    "type": "library",
+    "name": "SpaceIndex/Bitly",
     "description": "PHP client for the Bitly API",
-    "keywords": ["bitly", "api"],
-    "homepage": "https://github.com/bitly/bitly-api-php",
-    "authors": [
-        {
-            "name": "James Socol",
-            "email": "james@bit.ly",
-            "role": "Developer"
-        }
-    ],
-    "autoload": {
-        "classmap": ["Bitly.php"]
+    "keywords": ["bitly", "api", "composer"],
+    "type": "library",
+    "require": {
+        "php": ">=7.0.0"
     },
-    "license": "Apache Software License 2.0",
-    "version": "0.1.0"
+    "require-dev": {
+        "phpunit/phpunit": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bitly\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Bitly\\Test\\": "tests"
+        }
+    }
 }
